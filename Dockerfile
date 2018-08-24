@@ -1,38 +1,32 @@
 # vim:set ft=dockerfile:
 
-# VERSION 1.0
+# VERSION 1.1
 # AUTHOR:         Alexander Turcic <alex@zeitgeist.se>
 # DESCRIPTION:    sslyze in a Docker container
 # TO_BUILD:       docker build --rm -t zeitgeist/docker-sslyze .
 # SOURCE:         https://github.com/alexzeitgeist/docker-sslyze
 
 # Pull base image.
-FROM debian:jessie
+FROM python:3.6.6-stretch
 MAINTAINER Alexander Turcic "alex@zeitgeist.se"
 
-ENV RELEASE_URL https://github.com/nabla-c0d3/sslyze/archive/0.13.3.zip
-ENV RELEASE_DIR /sslyze-0.13.3
+# The read me from sslyze v1.4.3 gives installation instructions using pip
 
-# Compile sslyze
-RUN \
-  apt-get update && \
-  apt-get install -y python2.7 unzip wget python-pip python-dev gcc --no-install-recommends && \
-  wget "${RELEASE_URL}" -O sslyze.zip && \
-  unzip sslyze.zip && \ 
-  rm sslyze.zip && \
-  cd ${RELEASE_DIR} && \
-  pip install -r requirements.txt --target ./lib && \
-  apt-get -y purge unzip wget python-pip python-dev gcc && \
-  apt-get -y autoremove --purge && \
-  rm -rf /var/lib/apt/lists/*
+# Fixing the versions of all the dependancies in the docker file
+# ensures a repeatable build in spite of package updates.
+# The versions reflect the latest versions on 2018-08-24
 
-RUN \
-  export uid=1000 gid=1000 && \
-  groupadd --gid ${gid} user && \
-  useradd --uid ${uid} --gid ${gid} --create-home user
+WORKDIR /usr/src/app
 
-USER user
-WORKDIR ${RELEASE_DIR}
+RUN pip install --no-cache-dir   asn1crypto==0.24.0 \
+ && pip install --no-cache-dir    pycparser==2.18 \
+ && pip install --no-cache-dir         cffi==1.11.5 \
+ && pip install --no-cache-dir cryptography==2.2.2 \
+ && pip install --no-cache-dir         idna==2.7 \
+ && pip install --no-cache-dir          six==1.11.0 \
+ && pip install --no-cache-dir   tls-parser==1.2.1 \
+ && pip install --no-cache-dir        nassl==1.1.3 \
+ && pip install --no-cache-dir       sslyze==1.4.3
 
-ENTRYPOINT ["/usr/bin/python2.7", "sslyze_cli.py"]
+ENTRYPOINT [ "python", "-m", "sslyze" ]
 CMD ["-h"]
